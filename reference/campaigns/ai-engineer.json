@@ -1,0 +1,98 @@
+{
+   "id": "ai-engineer",
+   "name": "AI Engineer",
+   "objective": "Identify posts that indicate a need to hire a developer/engineer who builds custom AI/ML systems or models.",
+   "qualifier": "Classify posts whose title or description implies hiring or seeking AI/ML engineering work.",
+   "criteria": {
+      "keywords": {
+         "must": [
+            "AI",
+            "machine learning",
+            "ML",
+            "deep learning",
+            "neural network",
+            "LLM",
+            "large language model"
+         ],
+         "should": [
+            "data scientist",
+            "model training",
+            "fine-tune",
+            "prompt engineering",
+            "model deployment",
+            "custom model"
+         ],
+         "exclude": [
+            "job board",
+            "hiring for non-technical roles",
+            "looking for tutorials",
+            "how to learn"
+         ]
+      },
+      "patterns": {
+         "include": [
+            "\\bhire\\b",
+            "\\blooking for (an|a)\\b",
+            "\\bneed( a| an)?\\b.*(engineer|developer|specialist)"
+         ],
+         "exclude": [
+            "\\bfor sale\\b",
+            "\\bfree\\b",
+            "\\blooking to buy a course\\b"
+         ]
+      },
+      "heuristics": [
+         "Title contains at least one 'must' keyword and a hiring verb (e.g., 'hire', 'looking for', 'need').",
+         "If only 'should' keywords appear without hiring verbs, prefer 'review' rather than 'prospect'.",
+         "If explicit product-for-sale language is present, mark 'rejected'."
+      ],
+      "positive_examples": [
+         "Hiring: Senior ML Engineer to build custom LLM integrations",
+         "Looking for AI developer to fine-tune models for medical text"
+      ],
+      "negative_examples": [
+         "Free AI tutorial resources — anyone want to share?",
+         "Looking to buy an AI course (not hiring)"
+      ],
+      "ambiguous_examples": [
+         "Need help with model deployment — budget TBD",
+         "Looking for someone to consult on ML strategy (may be hiring or consulting)"
+      ]
+   },
+   "labels": [
+      {
+         "label": "prospect",
+         "description": "Likely a hiring need for an AI engineer. Prioritize contact.",
+         "recommended_action": "auto-add to outreach queue"
+      },
+      {
+         "label": "review",
+         "description": "Uncertain — requires human review to confirm.",
+         "recommended_action": "send to manual review triage"
+      },
+      {
+         "label": "rejected",
+         "description": "Does not match hiring criteria.",
+         "recommended_action": "ignore or archive"
+      }
+   ],
+   "default_label": "review",
+   "thresholds": {
+      "prospect_confidence": 0.75,
+      "review_confidence": 0.45
+   },
+   "classifierHints": {
+      "outputSchema": {
+         "postId": "string",
+         "tag": "prospect|review|rejected",
+         "confidence": "number",
+         "evidence": "string"
+      },
+      "replyFormat": "Return a JSON array with objects matching outputSchema. Keep evidence one short sentence indicating the deciding factor."
+   },
+   "metadata": {
+      "createdBy": "analyst@example.com",
+      "version": "1.0",
+      "createdAt": "2025-09-19T00:00:00Z"
+   }
+}
