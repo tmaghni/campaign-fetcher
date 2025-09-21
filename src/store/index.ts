@@ -75,21 +75,29 @@ export const store: IStore = {
       // Optional useful indexes on reddit collection
       await db.collection('reddit').createIndex({ subreddit: 1, createdAt: -1 })
       // index for fetcher state
-      await db.collection('fetcher_state').createIndex({ _id: 1 }, { unique: true })
+      await db
+         .collection('fetcher_state')
+         .createIndex({ _id: 1 }, { unique: true })
    },
    async getLastSeen(key: string) {
       if (!db) throw new Error('Not connected')
-      const doc = await db.collection('fetcher_state').findOne({ _id: key })
+      // cast filter to any to satisfy the driver typings for _id which may be
+      // string in this small state collection.
+      const doc = await db
+         .collection('fetcher_state')
+         .findOne<any>({ _id: key } as any)
       if (!doc || typeof doc.lastSeen !== 'number') return null
       return doc.lastSeen as number
    },
    async setLastSeen(key: string, unixSeconds: number) {
       if (!db) throw new Error('Not connected')
-      await db.collection('fetcher_state').updateOne(
-         { _id: key },
-         { $set: { lastSeen: unixSeconds, updatedAt: new Date() } },
-         { upsert: true }
-      )
+      await db
+         .collection('fetcher_state')
+         .updateOne(
+            { _id: key } as any,
+            { $set: { lastSeen: unixSeconds, updatedAt: new Date() } },
+            { upsert: true }
+         )
    },
 }
 

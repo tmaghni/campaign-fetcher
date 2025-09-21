@@ -2,6 +2,7 @@ import { BaseFetcher } from './baseFetcher'
 import { FetcherConfig, CliInvocation } from './types'
 import execaWrapper from '../utils/execaWrapper'
 import { store } from '../store'
+import crypto from 'crypto'
 
 export class RedditCliFetcher extends BaseFetcher {
    constructor(config: FetcherConfig) {
@@ -176,9 +177,13 @@ export class RedditCliFetcher extends BaseFetcher {
          console.log('No posts fetched')
          try {
             this.emit('cycleComplete', {
-               nextRunAt: this.config.mode === 'poll'
-                  ? new Date(Date.now() + (this.config.pollIntervalSeconds || 300) * 1000)
-                  : null,
+               nextRunAt:
+                  this.config.mode === 'poll'
+                     ? new Date(
+                          Date.now() +
+                             (this.config.pollIntervalSeconds || 300) * 1000
+                       )
+                     : null,
                message: 'No posts fetched this cycle',
             })
          } catch (e) {
@@ -190,19 +195,58 @@ export class RedditCliFetcher extends BaseFetcher {
       const collectionName = this.config.sourceTable || 'reddit'
       try {
          await store.connect()
-         const result = await store.bulkUpsertPosts(collectionName, allPosts)
-         // eslint-disable-next-line no-console
-         console.log(
-            `Upserted ${result.upsertedCount} posts into ${collectionName}`
-         )
+
+         // determine a fetcher state key so we can track last-seen per fetcher
+         const keyParts = [
+            this.config.campaignId || '',
+            (invocations[0]?.args || []).join(' '),
+         ]
+         const stateKey =
+            'fetcher:' +
+            crypto.createHash('sha1').update(keyParts.join('|')).digest('hex')
+
+         // retrieve last seen unix seconds for this fetcher
+         const lastSeen = (await store.getLastSeen(stateKey)) || 0
+
+         // filter posts to only include ones newer than lastSeen (created_utc is seconds)
+         const newPosts = allPosts.filter((p) => {
+            const ts =
+               typeof p.created_utc === 'number'
+                  ? p.created_utc
+                  : Number(p.created_utc)
+            return typeof ts === 'number' && ts > lastSeen
+         })
+
+         if (newPosts.length === 0) {
+            // eslint-disable-next-line no-console
+            console.log('No new posts since last run')
+         } else {
+            const result = await store.bulkUpsertPosts(collectionName, newPosts)
+            // eslint-disable-next-line no-console
+            console.log(
+               `Upserted ${result.upsertedCount} posts into ${collectionName}`
+            )
+
+            // update lastSeen to the max created_utc we just processed
+            const maxTs = Math.max(
+               ...newPosts.map((p) => (p.created_utc as number) || 0)
+            )
+            if (maxTs > lastSeen) {
+               await store.setLastSeen(stateKey, Math.floor(maxTs))
+            }
+         }
       } catch (err) {
          // eslint-disable-next-line no-console
          console.error('Failed to persist posts', err)
          try {
             this.emit('cycleComplete', {
-               nextRunAt: this.config.mode === 'poll'
-                  ? new Date(Date.now() + (this.config.pollIntervalSeconds || 300) * 1000)
-                  : null,
+               nextRunAt:
+                  this.config.mode === 'poll'
+                     ? new Date(
+                          Date.now() +
+                             (this.config.pollIntervalSeconds || 300) * 1000
+                       )
+                     : null,
                message: 'Failed to persist posts',
             })
          } catch (e) {

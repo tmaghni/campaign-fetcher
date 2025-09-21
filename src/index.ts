@@ -26,15 +26,33 @@ async function main() {
             console.warn('No fetcher registered for type', type)
             continue
          }
-         const cfg = { ...f, sourceTable: f.sourceTable || m.sourceTable || '' }
+         const cfg = {
+            ...f,
+            sourceTable: f.sourceTable || m.sourceTable || '',
+            campaignId: m.id,
+            manifestPath: m.manifestPath,
+         }
          const fetcher = ctor(cfg)
+         // print fetcher-specific details
+         console.log(
+            `  fetcher -> type=${type} pollIntervalSeconds=${
+               cfg.pollIntervalSeconds || 'n/a'
+            } startDelaySeconds=${cfg.startDelaySeconds || 0}`
+         )
+
          // listen for cycleComplete events to print status
          if ((fetcher as unknown as BaseFetcher).on) {
             const fb = fetcher as unknown as BaseFetcher
             fb.on('cycleComplete', (payload: any) => {
                const id = m.id || 'unknown-campaign'
-               const next = payload && payload.nextRunAt ? new Date(payload.nextRunAt) : null
-               const msg = payload && payload.message ? payload.message : 'cycle complete'
+               const next =
+                  payload && payload.nextRunAt
+                     ? new Date(payload.nextRunAt)
+                     : null
+               const msg =
+                  payload && payload.message
+                     ? payload.message
+                     : 'cycle complete'
                if (next) {
                   console.log(`${id}: ${msg}`)
                } else {
