@@ -8,6 +8,9 @@ export interface IStore {
       posts: any[]
    ): Promise<{ upsertedCount: number }>
    createIndexes(): Promise<void>
+   // last-seen tracking for fetchers: store/get last seen unix timestamp (seconds)
+   getLastSeen(key: string): Promise<number | null>
+   setLastSeen(key: string, unixSeconds: number): Promise<void>
 }
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017'
@@ -71,6 +74,22 @@ export const store: IStore = {
          .createIndex({ postId: 1, campaignId: 1 }, { unique: true })
       // Optional useful indexes on reddit collection
       await db.collection('reddit').createIndex({ subreddit: 1, createdAt: -1 })
+      // index for fetcher state
+      await db.collection('fetcher_state').createIndex({ _id: 1 }, { unique: true })
+   },
+   async getLastSeen(key: string) {
+      if (!db) throw new Error('Not connected')
+      const doc = await db.collection('fetcher_state').findOne({ _id: key })
+      if (!doc || typeof doc.lastSeen !== 'number') return null
+      return doc.lastSeen as number
+   },
+   async setLastSeen(key: string, unixSeconds: number) {
+      if (!db) throw new Error('Not connected')
+      await db.collection('fetcher_state').updateOne(
+         { _id: key },
+         { $set: { lastSeen: unixSeconds, updatedAt: new Date() } },
+         { upsert: true }
+      )
    },
 }
 

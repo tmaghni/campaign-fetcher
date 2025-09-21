@@ -12,6 +12,8 @@ export function loadManifests(
       try {
          const raw = fs.readFileSync(path.join(dir, f), 'utf8')
          const parsed = JSON.parse(raw) as CampaignManifest
+         // attach the manifest file path for better logging/traceability
+         parsed.manifestPath = path.join(dir, f)
          manifests.push(parsed)
       } catch (err) {
          // eslint-disable-next-line no-console

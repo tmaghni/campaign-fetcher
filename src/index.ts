@@ -1,5 +1,6 @@
 import { loadManifests } from './manifest/loader'
 import { fetcherRegistry } from './fetchers/registry'
+import { BaseFetcher } from './fetchers/baseFetcher'
 
 async function main() {
    const manifests = loadManifests()
@@ -12,6 +13,11 @@ async function main() {
    for (const m of manifests) {
       if (!m.fetcher) continue
       const fetcherDefs = Array.isArray(m.fetcher) ? m.fetcher : [m.fetcher]
+      // campaign-level logging
+      console.log(`Starting campaign ${m.id} - ${m.name || ''}`)
+      console.log(`  sourceTable: ${m.sourceTable || 'reddit'}`)
+      console.log(`  manifest: ${m.manifestPath || 'unknown'}`)
+      console.log(`  fetchers: ${fetcherDefs.length}`)
       for (const f of fetcherDefs) {
          if (f.enabled === false) continue
          const type = f.fetcherType || 'reddit-cli'
@@ -22,6 +28,20 @@ async function main() {
          }
          const cfg = { ...f, sourceTable: f.sourceTable || m.sourceTable || '' }
          const fetcher = ctor(cfg)
+         // listen for cycleComplete events to print status
+         if ((fetcher as unknown as BaseFetcher).on) {
+            const fb = fetcher as unknown as BaseFetcher
+            fb.on('cycleComplete', (payload: any) => {
+               const id = m.id || 'unknown-campaign'
+               const next = payload && payload.nextRunAt ? new Date(payload.nextRunAt) : null
+               const msg = payload && payload.message ? payload.message : 'cycle complete'
+               if (next) {
+                  console.log(`${id}: ${msg}`)
+               } else {
+                  console.log(`${id}: ${msg}`)
+               }
+            })
+         }
          started.push(fetcher)
          try {
             await fetcher.start()

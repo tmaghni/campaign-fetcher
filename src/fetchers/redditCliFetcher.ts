@@ -21,7 +21,19 @@ export class RedditCliFetcher extends BaseFetcher {
                // eslint-disable-next-line no-console
                console.error('fetchOnce error', err)
             }
-            if (this.running) setTimeout(loop, interval)
+            if (this.running) {
+               // calculate next run time and emit an event so callers can log it
+               const nextRunAt = new Date(Date.now() + interval)
+               try {
+                  this.emit('cycleComplete', {
+                     nextRunAt,
+                     message: `Waiting until ${nextRunAt.toLocaleString()} to continue`,
+                  })
+               } catch (e) {
+                  // ignore
+               }
+               setTimeout(loop, interval)
+            }
          }
          // Honor optional startDelaySeconds to stagger first run without blocking
          const delayMs = (this.config.startDelaySeconds || 0) * 1000
@@ -47,9 +59,18 @@ export class RedditCliFetcher extends BaseFetcher {
             setTimeout(() => {
                if (!this.running) return
                // don't await here — one-shot should run and return
-               this.fetchOnce().catch((err) =>
-                  console.error('fetchOnce error', err)
-               )
+               this.fetchOnce()
+                  .then(() => {
+                     try {
+                        this.emit('cycleComplete', {
+                           nextRunAt: null,
+                           message: 'One-shot fetch complete',
+                        })
+                     } catch (e) {
+                        // ignore
+                     }
+                  })
+                  .catch((err) => console.error('fetchOnce error', err))
             }, delayMs)
          } else {
             await this.fetchOnce()
@@ -153,6 +174,16 @@ export class RedditCliFetcher extends BaseFetcher {
       if (allPosts.length === 0) {
          // eslint-disable-next-line no-console
          console.log('No posts fetched')
+         try {
+            this.emit('cycleComplete', {
+               nextRunAt: this.config.mode === 'poll'
+                  ? new Date(Date.now() + (this.config.pollIntervalSeconds || 300) * 1000)
+                  : null,
+               message: 'No posts fetched this cycle',
+            })
+         } catch (e) {
+            // ignore
+         }
          return
       }
 
@@ -167,6 +198,16 @@ export class RedditCliFetcher extends BaseFetcher {
       } catch (err) {
          // eslint-disable-next-line no-console
          console.error('Failed to persist posts', err)
+         try {
+            this.emit('cycleComplete', {
+               nextRunAt: this.config.mode === 'poll'
+                  ? new Date(Date.now() + (this.config.pollIntervalSeconds || 300) * 1000)
+                  : null,
+               message: 'Failed to persist posts',
+            })
+         } catch (e) {
+            // ignore
+         }
       }
    }
 }

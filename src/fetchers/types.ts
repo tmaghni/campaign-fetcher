@@ -15,6 +15,9 @@ export interface FetcherConfig {
    cli?: CliInvocation | CliInvocation[] | string[] | string[][]
    cliBinary?: string // legacy: e.g. 'reddit' or full path
    startDelaySeconds?: number
+   // Injected by manifest loader / index at startup
+   campaignId?: string
+   manifestPath?: string
 }
 
 export interface CliInvocation {
@@ -33,4 +36,6 @@ export interface CampaignManifest {
    // allow single fetcher or an array of fetchers
    fetcher?: FetcherConfig | FetcherConfig[]
    metadata?: Record<string, any>
+   // path to the JSON manifest file on disk (populated by loader)
+   manifestPath?: string
 }
