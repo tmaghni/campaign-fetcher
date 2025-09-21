@@ -1,6 +1,254 @@
 {
    "id": "ai-engineer",
    "name": "AI Engineer",
+   "sourceTable": "reddit",
+   "fetcher": [
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 300,
+         "startDelaySeconds": 0,
+         "perPage": 100,
+         "limit": 100,
+         "max": 1000,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "forhire",
+               "--sort",
+               "new",
+               "--per-page",
+               "100",
+               "--limit",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 360,
+         "startDelaySeconds": 10,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "MachineLearning",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 360,
+         "startDelaySeconds": 20,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "DeepLearning",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 420,
+         "startDelaySeconds": 30,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "artificial",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 420,
+         "startDelaySeconds": 40,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "datascience",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 480,
+         "startDelaySeconds": 50,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "MLOps",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 480,
+         "startDelaySeconds": 60,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "startups",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 540,
+         "startDelaySeconds": 70,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "freelance",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 540,
+         "startDelaySeconds": 80,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "hireaprogrammer",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 600,
+         "startDelaySeconds": 90,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "techjobs",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      },
+      {
+         "fetcherType": "reddit-cli",
+         "enabled": true,
+         "mode": "poll",
+         "pollIntervalSeconds": 600,
+         "startDelaySeconds": 100,
+         "perPage": 100,
+         "limit": 100,
+         "startImmediately": true,
+         "cli": {
+            "program": "reddit",
+            "args": [
+               "list",
+               "--subreddit",
+               "remotejobs",
+               "--sort",
+               "new",
+               "--per-page",
+               "100"
+            ]
+         }
+      }
+   ],
    "objective": "Identify posts that indicate a need to hire a developer/engineer who builds custom AI/ML systems or models.",
    "qualifier": "Classify posts whose title or description implies hiring or seeking AI/ML engineering work.",
    "criteria": {
@@ -57,6 +305,19 @@
       "ambiguous_examples": [
          "Need help with model deployment — budget TBD",
          "Looking for someone to consult on ML strategy (may be hiring or consulting)"
+      ],
+      "subreddits": [
+         "forhire",
+         "MachineLearning",
+         "DeepLearning",
+         "artificial",
+         "datascience",
+         "MLOps",
+         "startups",
+         "freelance",
+         "hireaprogrammer",
+         "techjobs",
+         "remotejobs"
       ]
    },
    "labels": [
