@@ -18,6 +18,16 @@ export interface FetcherConfig {
    // Injected by manifest loader / index at startup
    campaignId?: string
    manifestPath?: string
+   // paging and rate-limit controls
+   pageUntilLastSeen?: boolean
+   maxPagesPerCycle?: number
+   interPageDelayMs?: number
+   retry?: {
+      baseMs?: number
+      maxMs?: number
+      maxAttempts?: number
+      jitter?: number
+   }
 }
 
 export interface CliInvocation {

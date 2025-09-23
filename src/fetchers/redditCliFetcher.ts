@@ -150,26 +150,172 @@ export class RedditCliFetcher extends BaseFetcher {
          })
       }
 
+      // Support optional paging behavior: issue repeated invocations until we've
+      // caught up to lastSeen (if pageUntilLastSeen=true) or until maxPagesPerCycle
+      const perPage = this.config.perPage || this.config.limit || 25
+      const pageUntilLastSeen = !!this.config.pageUntilLastSeen
+      const maxPages = this.config.maxPagesPerCycle || 10
+      const interPageDelayMs = this.config.interPageDelayMs ?? 1000
+      const retryCfg = this.config.retry || {
+         baseMs: 500,
+         maxMs: 30000,
+         maxAttempts: 5,
+         jitter: 0.2,
+      }
+
       const allPosts: any[] = []
-      for (const inv of invocations) {
-         // eslint-disable-next-line no-console
-         console.log('Running', inv.program, (inv.args || []).join(' '))
-         const result = await execaWrapper.run(inv.program, inv.args || [])
-         const stdout = result.stdout
-         let parsed: any
-         try {
-            parsed = JSON.parse(stdout)
-         } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error(
-               'Failed to parse output for',
-               inv.program,
-               inv.args,
-               err
-            )
-            continue
+
+      // state key to check lastSeen early (compute now)
+      const keyParts = [
+         this.config.campaignId || '',
+         (invocations[0]?.args || []).join(' '),
+      ]
+      const stateKey =
+         'fetcher:' +
+         crypto.createHash('sha1').update(keyParts.join('|')).digest('hex')
+      await store.connect()
+      const lastSeen = (await store.getLastSeen(stateKey)) || 0
+
+      let pagesFetched = 0
+      let stopPaging = false
+      let pageToken: string | null = null
+
+      while (!stopPaging && pagesFetched < maxPages) {
+         // Build invocation args for this page. If CLI supports paging tokens/offsets,
+         // manifest authors should include placeholders or different invocations. For
+         // simplicity we'll append --per-page and optionally --page or --after when
+         // present in args; this keeps compatibility with simple CLIs.
+         const inv = invocations[0]
+         let args = [...(inv.args || [])]
+         // ensure per-page param exists
+         if (!args.includes('--per-page') && !args.includes('-n')) {
+            args = args.concat(['--per-page', String(perPage)])
          }
-         if (Array.isArray(parsed)) allPosts.push(...parsed)
+         // append page token/offset if present (this is CLI-dependent; if your
+         // CLI uses `--after` or `--page` modify the manifest accordingly)
+         if (pageToken) args = args.concat(['--after', pageToken])
+
+         // run with retry/backoff
+         let attempt = 0
+         let lastErr: any = null
+         while (attempt < (retryCfg.maxAttempts || 5)) {
+            // eslint-disable-next-line no-console
+            console.log(
+               'Running',
+               inv.program,
+               args.join(' '),
+               `(page ${pagesFetched + 1})`
+            )
+            const result = await execaWrapper.run(inv.program, args || [])
+            if (result.statusCode === 429 || result.retryAfterSeconds) {
+               // rate-limited
+               const retryAfter =
+                  result.retryAfterSeconds ??
+                  Math.min(
+                     retryCfg.maxMs || 30000,
+                     ((retryCfg.baseMs || 500) * Math.pow(2, attempt)) / 1000
+                  )
+               const backoffMs = Math.min(
+                  retryCfg.maxMs || 30000,
+                  (retryCfg.baseMs || 500) * Math.pow(2, attempt)
+               )
+               const jitter = Math.floor(
+                  (Math.random() - 0.5) * ((retryCfg.jitter || 0.2) * backoffMs)
+               )
+               const waitMs = Math.max(0, backoffMs + jitter)
+               const nextRunAt = new Date(
+                  Date.now() +
+                     (result.retryAfterSeconds
+                        ? result.retryAfterSeconds * 1000
+                        : waitMs)
+               )
+               // eslint-disable-next-line no-console
+               console.warn(
+                  `Rate limited (429). Pausing until ${nextRunAt.toLocaleString()}`
+               )
+               try {
+                  this.emit('cycleComplete', {
+                     nextRunAt,
+                     message: `Rate limited; pausing until ${nextRunAt.toLocaleString()}`,
+                  })
+               } catch (e) {}
+               return
+            }
+
+            const stdout = result.stdout
+            let parsed: any
+            try {
+               parsed = JSON.parse(stdout)
+            } catch (err) {
+               lastErr = err
+               attempt += 1
+               const backoffMs = Math.min(
+                  retryCfg.maxMs || 30000,
+                  (retryCfg.baseMs || 500) * Math.pow(2, attempt)
+               )
+               const jitter = Math.floor(
+                  (Math.random() - 0.5) * ((retryCfg.jitter || 0.2) * backoffMs)
+               )
+               const waitMs = Math.max(0, backoffMs + jitter)
+               // eslint-disable-next-line no-console
+               console.warn(
+                  `Failed to parse CLI output, retrying in ${waitMs}ms (attempt ${attempt})`
+               )
+               await new Promise((r) => setTimeout(r, waitMs))
+               continue
+            }
+
+            // successful parse — append posts
+            if (Array.isArray(parsed)) {
+               allPosts.push(...parsed)
+            }
+
+            // If parsed supports a paging token/cursor, capture it. This is CLI-specific
+            // and relies on the CLI returning a `after` or similar token in the JSON. If
+            // not present, we'll just rely on page counts and created_utc checks.
+            pageToken = parsed && parsed.after ? parsed.after : null
+
+            pagesFetched += 1
+
+            // Stop conditions:
+            // - if not pagingUntilLastSeen, we only fetch one page
+            // - if we found a post older/equal to lastSeen in this page, we can stop
+            if (!pageUntilLastSeen) {
+               stopPaging = true
+            } else {
+               // check if any item in parsed has created_utc <= lastSeen
+               if (Array.isArray(parsed)) {
+                  const foundOld = parsed.some((p: any) => {
+                     const ts =
+                        typeof p.created_utc === 'number'
+                           ? p.created_utc
+                           : Number(p.created_utc)
+                     return typeof ts === 'number' && ts <= lastSeen
+                  })
+                  if (foundOld) stopPaging = true
+               }
+               // if no pageToken and parsed length < perPage, we might be at the end
+               if (
+                  !pageToken &&
+                  Array.isArray(parsed) &&
+                  parsed.length < perPage
+               )
+                  stopPaging = true
+            }
+
+            // wait a bit between pages to avoid bursts
+            if (!stopPaging && interPageDelayMs > 0)
+               await new Promise((r) => setTimeout(r, interPageDelayMs))
+            break
+         }
+
+         if (pagesFetched >= maxPages) {
+            // eslint-disable-next-line no-console
+            console.warn(
+               `Reached maxPagesPerCycle (${maxPages}), stopping this cycle.`
+            )
+            break
+         }
       }
 
       if (allPosts.length === 0) {
@@ -194,27 +340,25 @@ export class RedditCliFetcher extends BaseFetcher {
 
       const collectionName = this.config.sourceTable || 'reddit'
       try {
-         await store.connect()
-
-         // determine a fetcher state key so we can track last-seen per fetcher
-         const keyParts = [
+         // now persist in a deduplicated way using lastSeen key (recompute key)
+         const finalKeyParts = [
             this.config.campaignId || '',
             (invocations[0]?.args || []).join(' '),
          ]
-         const stateKey =
+         const finalStateKey =
             'fetcher:' +
-            crypto.createHash('sha1').update(keyParts.join('|')).digest('hex')
+            crypto
+               .createHash('sha1')
+               .update(finalKeyParts.join('|'))
+               .digest('hex')
+         const finalLastSeen = (await store.getLastSeen(finalStateKey)) || 0
 
-         // retrieve last seen unix seconds for this fetcher
-         const lastSeen = (await store.getLastSeen(stateKey)) || 0
-
-         // filter posts to only include ones newer than lastSeen (created_utc is seconds)
          const newPosts = allPosts.filter((p) => {
             const ts =
                typeof p.created_utc === 'number'
                   ? p.created_utc
                   : Number(p.created_utc)
-            return typeof ts === 'number' && ts > lastSeen
+            return typeof ts === 'number' && ts > finalLastSeen
          })
 
          if (newPosts.length === 0) {
@@ -231,8 +375,8 @@ export class RedditCliFetcher extends BaseFetcher {
             const maxTs = Math.max(
                ...newPosts.map((p) => (p.created_utc as number) || 0)
             )
-            if (maxTs > lastSeen) {
-               await store.setLastSeen(stateKey, Math.floor(maxTs))
+            if (maxTs > finalLastSeen) {
+               await store.setLastSeen(finalStateKey, Math.floor(maxTs))
             }
          }
       } catch (err) {

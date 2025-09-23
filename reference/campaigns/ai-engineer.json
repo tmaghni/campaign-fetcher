@@ -13,6 +13,10 @@
          "limit": 100,
          "max": 1000,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -37,6 +41,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -59,6 +67,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -81,6 +93,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -103,6 +119,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -125,6 +145,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -147,6 +171,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -169,6 +197,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -191,6 +223,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -213,6 +249,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
@@ -235,6 +275,10 @@
          "perPage": 100,
          "limit": 100,
          "startImmediately": true,
+         "pageUntilLastSeen": true,
+         "maxPagesPerCycle": 10,
+         "interPageDelayMs": 1000,
+         "retry": { "baseMs": 500, "maxMs": 30000, "maxAttempts": 5, "jitter": 0.2 },
          "cli": {
             "program": "reddit",
             "args": [
