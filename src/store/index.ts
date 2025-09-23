@@ -11,6 +11,7 @@ export interface IStore {
    // last-seen tracking for fetchers: store/get last seen unix timestamp (seconds)
    getLastSeen(key: string): Promise<number | null>
    setLastSeen(key: string, unixSeconds: number): Promise<void>
+   getCount(collectionName: string): Promise<number>
 }
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017'
@@ -98,6 +99,11 @@ export const store: IStore = {
             { $set: { lastSeen: unixSeconds, updatedAt: new Date() } },
             { upsert: true }
          )
+   },
+   async getCount(collectionName: string) {
+      if (!db) throw new Error('Not connected')
+      // exact count; for very large collections, consider estimatedDocumentCount
+      return await db.collection(collectionName).countDocuments()
    },
 }
 

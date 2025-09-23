@@ -174,6 +174,17 @@ export class RedditCliFetcher extends BaseFetcher {
          'fetcher:' +
          crypto.createHash('sha1').update(keyParts.join('|')).digest('hex')
       await store.connect()
+      // report current collection size before starting the cycle
+      const collectionName = this.config.sourceTable || 'reddit'
+      try {
+         const count = await store.getCount(collectionName)
+         // eslint-disable-next-line no-console
+         console.log(`${count} records found in ${collectionName} table.`)
+      } catch (e) {
+         // eslint-disable-next-line no-console
+         console.warn('Could not read collection count for', collectionName, e)
+      }
+
       const lastSeen = (await store.getLastSeen(stateKey)) || 0
 
       let pagesFetched = 0
@@ -338,7 +349,6 @@ export class RedditCliFetcher extends BaseFetcher {
          return
       }
 
-      const collectionName = this.config.sourceTable || 'reddit'
       try {
          // now persist in a deduplicated way using lastSeen key (recompute key)
          const finalKeyParts = [
