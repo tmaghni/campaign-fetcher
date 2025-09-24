@@ -102,8 +102,8 @@ export const store: IStore = {
    },
    async getCount(collectionName: string) {
       if (!db) throw new Error('Not connected')
-      // exact count; for very large collections, consider estimatedDocumentCount
-      return await db.collection(collectionName).countDocuments()
+      // use estimatedDocumentCount for a faster, approximate count on large collections
+      return await db.collection(collectionName).estimatedDocumentCount()
    },
 }
 
